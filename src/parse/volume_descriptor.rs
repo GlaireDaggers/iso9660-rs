@@ -2,7 +2,7 @@
 
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take};
-use nom::combinator::{map, map_res, map_parser, rest, value};
+use nom::combinator::{map, map_parser, map_res, rest, value};
 use nom::number::complete::*;
 use nom::sequence::tuple;
 use nom::IResult;
@@ -56,42 +56,43 @@ pub enum CharacterEncoding {
 }
 
 impl CharacterEncoding {
-    pub fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
-        // The field is 32 bytes long, and per §8.5.6 ECMA says there can be multiple
-        // encodings listed.  But. Really.  For now let's just check for the standard
-        // ISO 9660 encoding or UCS-2.
-
-        // Per ECMA 35 / ISO 2022 §13.2.2:
-        // I byte 0x25 (02/05) = Designate Other Coding System
-        //
-        // Per ECMA 35 / ISO 2022 §15.4.2:
-        // DOCS with I byte 0x2F (02/15) shall mean it's not really DOCS and we should
-        // use the registry as a reference.
-        //
-        // ISO Registry shows:
-        // #162 UCS-2 Level 1 F byte is 0x40 (04/00)
-        // #175 UCS-2 Level 2 F byte is 0x43 (04/03)
-        // #175 UCS-2 Level 3 F byte is 0x45 (04/05)
-        let orig_len = bytes.len();
-
-        let (bytes, encoding) = alt((
-            value(CharacterEncoding::Ucs2Level1, tag(&[0x25, 0x2F, 0x40])),
-            value(CharacterEncoding::Ucs2Level2, tag(&[0x25, 0x2F, 0x43])),
-            value(CharacterEncoding::Ucs2Level3, tag(&[0x25, 0x2F, 0x45])),
-            value(CharacterEncoding::Iso9660, tag(&[0_u8; 32])),
-        ))(bytes)?;
-
-        let bytes = match orig_len - bytes.len() {
-            len if len < 32 => {
-                take(32 - len)(bytes)?.0
-            },
-            _ => bytes
-        };
-
-        Ok((bytes, encoding))
+    pub fn parse(input: &[u8]) -> Result<Self> {
+        Ok(character_encoding(input)?.1)
     }
 }
 
+pub fn character_encoding(bytes: &[u8]) -> IResult<&[u8], CharacterEncoding> {
+    // The field is 32 bytes long, and per §8.5.6 ECMA says there can be multiple
+    // encodings listed.  But. Really.  For now let's just check for the standard
+    // ISO 9660 encoding or UCS-2.
+
+    // Per ECMA 35 / ISO 2022 §13.2.2:
+    // I byte 0x25 (02/05) = Designate Other Coding System
+    //
+    // Per ECMA 35 / ISO 2022 §15.4.2:
+    // DOCS with I byte 0x2F (02/15) shall mean it's not really DOCS and we should
+    // use the registry as a reference.
+    //
+    // ISO Registry shows:
+    // #162 UCS-2 Level 1 F byte is 0x40 (04/00)
+    // #175 UCS-2 Level 2 F byte is 0x43 (04/03)
+    // #175 UCS-2 Level 3 F byte is 0x45 (04/05)
+    let orig_len = bytes.len();
+
+    let (bytes, encoding) = alt((
+        value(CharacterEncoding::Ucs2Level1, tag(&[0x25, 0x2F, 0x40])),
+        value(CharacterEncoding::Ucs2Level2, tag(&[0x25, 0x2F, 0x43])),
+        value(CharacterEncoding::Ucs2Level3, tag(&[0x25, 0x2F, 0x45])),
+        value(CharacterEncoding::Iso9660, tag(&[0_u8; 32])),
+    ))(bytes)?;
+
+    let bytes = match orig_len - bytes.len() {
+        len if len < 32 => take(32 - len)(bytes)?.0,
+        _ => bytes,
+    };
+
+    Ok((bytes, encoding))
+}
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
@@ -113,32 +114,23 @@ impl VolumeDescriptor {
 }
 
 fn decode_string(encoding: CharacterEncoding) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
-    move |i: &[u8]| {
-        match encoding {
-            CharacterEncoding::Ucs2Level1 |
-            CharacterEncoding::Ucs2Level2 |
-            CharacterEncoding::Ucs2Level3 => {
-                map(
-                    rest,
-                    |input| {
-                        let (cow, _encoding_used, had_errors) = encoding_rs::UTF_16BE.decode(input);
-                        assert_eq!(had_errors, false);
-                        cow.trim_end().to_string()
-                    }
-                )(i)
-            },
-            CharacterEncoding::Iso9660 => {
-                map(
-                    map(map_res(rest, str::from_utf8), str::trim_end),
-                    str::to_string,
-                )(i)
-            }
-        }
+    move |i: &[u8]| match encoding {
+        CharacterEncoding::Ucs2Level1
+        | CharacterEncoding::Ucs2Level2
+        | CharacterEncoding::Ucs2Level3 => map(rest, |input| {
+            let (cow, _encoding_used, had_errors) = encoding_rs::UTF_16BE.decode(input);
+            assert_eq!(had_errors, false);
+            cow.trim_end().to_string()
+        })(i),
+        CharacterEncoding::Iso9660 => map(
+            map(map_res(rest, str::from_utf8), str::trim_end),
+            str::to_string,
+        )(i),
     }
 }
 
 fn boot_record(i: &[u8]) -> IResult<&[u8], VolumeDescriptor> {
-    let (i, (boot_system_identifier, boot_identifier, data)) : (&[u8],(String,_, _)) = tuple((
+    let (i, (boot_system_identifier, boot_identifier, data)): (&[u8], (String, _, _)) = tuple((
         map_parser(take(32usize), decode_string(CharacterEncoding::Iso9660)),
         map_parser(take(32usize), decode_string(CharacterEncoding::Iso9660)),
         take(1977usize),
@@ -173,7 +165,7 @@ fn descriptor_table(i: &[u8]) -> IResult<&[u8], VolumeDescriptorTable> {
     let (i, volume_identifier) = take(32usize)(i)?;
     let (i, _) = take(8usize)(i)?; // padding
     let (i, volume_space_size) = both_endian32(i)?;
-    let (i, character_encoding) = CharacterEncoding::parse(i)?;
+    let (i, character_encoding) = character_encoding(i)?;
     let (i, volume_set_size) = both_endian16(i)?;
     let (i, volume_sequence_number) = both_endian16(i)?;
     let (i, logical_block_size) = both_endian16(i)?;
@@ -205,11 +197,15 @@ fn descriptor_table(i: &[u8]) -> IResult<&[u8], VolumeDescriptorTable> {
     let (_, volume_identifier) = decode_string(character_encoding)(volume_identifier)?;
     let (_, volume_set_identifier) = decode_string(character_encoding)(volume_set_identifier)?;
     let (_, publisher_identifier) = decode_string(character_encoding)(publisher_identifier)?;
-    let (_, data_preparer_identifier) = decode_string(character_encoding)(data_preparer_identifier)?;
+    let (_, data_preparer_identifier) =
+        decode_string(character_encoding)(data_preparer_identifier)?;
     let (_, application_identifier) = decode_string(character_encoding)(application_identifier)?;
-    let (_, copyright_file_identifier) = decode_string(character_encoding)(copyright_file_identifier)?;
-    let (_, abstract_file_identifier) = decode_string(character_encoding)(abstract_file_identifier)?;
-    let (_, bibliographic_file_identifier) = decode_string(CharacterEncoding::Iso9660)(bibliographic_file_identifier)?;
+    let (_, copyright_file_identifier) =
+        decode_string(character_encoding)(copyright_file_identifier)?;
+    let (_, abstract_file_identifier) =
+        decode_string(character_encoding)(abstract_file_identifier)?;
+    let (_, bibliographic_file_identifier) =
+        decode_string(CharacterEncoding::Iso9660)(bibliographic_file_identifier)?;
 
     Ok((
         i,
@@ -251,6 +247,6 @@ fn supplementary_descriptor<'a>(i: &'a [u8]) -> IResult<&'a [u8], VolumeDescript
     map(descriptor_table, VolumeDescriptor::Supplementary)(i)
 }
 
- fn primary_descriptor(i: &[u8]) -> IResult<&[u8], VolumeDescriptor> {
+fn primary_descriptor(i: &[u8]) -> IResult<&[u8], VolumeDescriptor> {
     map(descriptor_table, VolumeDescriptor::Primary)(i)
 }

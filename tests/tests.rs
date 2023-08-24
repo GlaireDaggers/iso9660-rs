@@ -4,7 +4,7 @@ use iso9660::{DirectoryEntry, ISO9660};
 use std::fs::File;
 use std::io::Read;
 
-const TEST_IMAGE : &'static str = "images/test.iso";
+const TEST_IMAGE: &'static str = "images/test.iso";
 
 #[test]
 fn test_dir() {
