@@ -1,16 +1,23 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
+use std::str;
+
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    combinator::{map_parser, value},
+    multi::length_data,
+    number::complete::le_u8,
+    IResult,
+};
 use time::OffsetDateTime;
 
-use super::both_endian::{both_endian16, both_endian32};
-use super::date_time::date_time;
-use super::volume_descriptor::CharacterEncoding;
-use crate::{ISOError, Result};
-use nom::combinator::{map, map_res};
-use nom::multi::length_data;
-use nom::number::complete::le_u8;
-use nom::IResult;
-use std::str;
+use super::{
+    both_endian::{both_endian16, both_endian32},
+    date_time::date_time,
+    decode_string, CharacterEncoding,
+};
+use crate::Result;
 
 bitflags! {
     #[derive(Clone, Debug)]
@@ -48,8 +55,8 @@ impl DirectoryEntryHeader {
     }
 }
 
-pub fn directory_entry(
-    i: &[u8],
+pub fn directory_entry<'a>(
+    i: &'a [u8],
     character_encoding: CharacterEncoding,
 ) -> IResult<&[u8], (DirectoryEntryHeader, String)> {
     let (i, length) = le_u8(i)?;
@@ -62,32 +69,20 @@ pub fn directory_entry(
     let (i, interleave_gap_size) = le_u8(i)?;
     let (i, volume_sequence_number) = both_endian16(i)?;
 
-    let (i, identifier) = match character_encoding {
-        CharacterEncoding::Iso9660 => {
-            map(map_res(length_data(le_u8), str::from_utf8), str::to_string)(i)?
-        }
-        CharacterEncoding::Ucs2Level1
-        | CharacterEncoding::Ucs2Level2
-        | CharacterEncoding::Ucs2Level3 => map_res(length_data(le_u8), |bytes: &[u8]| {
-            // From https://www.unicode.org/faq/utf_bom.html#utf16-11
-            // UCS-2 does not describe a data format distinct from UTF-16, because both use
-            // exactly the same 16-bit code unit representations. However, UCS-2 does not
-            // interpret surrogate code points, and thus cannot be used to conformantly
-            // represent supplementary characters.
-            if bytes == &[0] {
-                Ok("\u{0}".into())
-            } else if bytes == &[1] {
-                Ok("\u{1}".into())
+    let (i, identifier) = map_parser(
+        length_data(le_u8),
+        |bytes: &'a [u8]| -> IResult<&'a [u8], String> {
+            if bytes.len() == 1 {
+                alt((
+                    value(String::from("\u{0}"), tag(&[0])),
+                    value(String::from("\u{1}"), tag(&[1])),
+                    decode_string(character_encoding),
+                ))(bytes)
             } else {
-                let (cow, _encoding_used, had_errors) = encoding_rs::UTF_16BE.decode(&bytes);
-                if had_errors {
-                    Err(ISOError::Utf16)
-                } else {
-                    Ok(cow.to_string())
-                }
+                decode_string(character_encoding)(bytes)
             }
-        })(i)?,
-    };
+        },
+    )(i)?;
 
     // After the file identifier, ISO 9660 allows addition space for
     // system use. Ignore that for now.
