@@ -11,7 +11,7 @@ use std::io::Read;
 fn test_dir() {
     let fs = ISO9660::new(File::open("test.iso").unwrap()).unwrap();
 
-    let mut iter = fs.root.contents();
+    let mut iter = fs.root().contents();
     assert_eq!(iter.next().unwrap().unwrap().identifier(), ".");
     assert_eq!(iter.next().unwrap().unwrap().identifier(), "..");
     assert_eq!(iter.next().unwrap().unwrap().identifier(), "A");

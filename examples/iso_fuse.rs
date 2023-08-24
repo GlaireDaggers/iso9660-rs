@@ -57,7 +57,7 @@ impl ISOFuse {
         let mut inodes = HashMap::new();
         inodes.insert(
             fuser::FUSE_ROOT_ID,
-            DirectoryEntry::Directory(iso9660.root.clone()),
+            DirectoryEntry::Directory(iso9660.root().clone()),
         );
         Self {
             _iso9660: iso9660,

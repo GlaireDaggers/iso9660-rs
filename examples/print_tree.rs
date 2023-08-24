@@ -37,7 +37,7 @@ fn main() {
             }
         }
     } else {
-        print_tree(&fs.root, 0);
+        print_tree(&fs.root(), 0);
     }
 }
 

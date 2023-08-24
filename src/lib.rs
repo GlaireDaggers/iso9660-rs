@@ -26,8 +26,8 @@ mod parse;
 
 pub struct ISO9660<T: ISO9660Reader> {
     _file: FileRef<T>,
-    pub root: ISODirectory<T>,
-    pub sup_root: Option<ISODirectory<T>>,
+    root: ISODirectory<T>,
+    sup_root: Option<ISODirectory<T>>,
     primary: VolumeDescriptor,
 }
 
@@ -129,6 +129,23 @@ impl<T: ISO9660Reader> ISO9660<T> {
                 .or_else(|| self.root.resolve_path(path).transpose())
                 .transpose()?
         )
+    }
+
+    /// Returns the root directory from the supplemental table if present. Otherwise returns the primary table.
+    pub fn root(&self) -> &ISODirectory<T> {
+        match self.sup_root.as_ref() {
+            Some(sup_root) => sup_root,
+            None => &self.root
+        }
+    }
+
+    /// Returns the root directory entry. 0 = primary, 1 = secondary (if not present, `None` is returned)
+    pub fn root_at(&self, index: usize) -> Option<&ISODirectory<T>> {
+        match index {
+            0 => Some(&self.root),
+            1 => self.sup_root.as_ref(),
+            _ => unimplemented!()
+        }
     }
 
     pub fn block_size(&self) -> u16 {
