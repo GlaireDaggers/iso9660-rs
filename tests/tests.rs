@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
-extern crate iso9660;
-extern crate md5;
-
 use iso9660::{DirectoryEntry, ISO9660};
 use std::fs::File;
 use std::io::Read;
 
+const TEST_IMAGE : &'static str = "images/test.iso";
+
 #[test]
 fn test_dir() {
-    let fs = ISO9660::new(File::open("test.iso").unwrap()).unwrap();
+    let fs = ISO9660::new(File::open(TEST_IMAGE).unwrap()).unwrap();
 
     let mut iter = fs.root().contents();
     assert_eq!(iter.next().unwrap().unwrap().identifier(), ".");
@@ -21,7 +20,7 @@ fn test_dir() {
 
 #[test]
 fn test_large_file() {
-    let fs = ISO9660::new(File::open("test.iso").unwrap()).unwrap();
+    let fs = ISO9660::new(File::open(TEST_IMAGE).unwrap()).unwrap();
 
     let file = match fs.open("gpl_3_0.txt").unwrap().unwrap() {
         DirectoryEntry::File(file) => file,
@@ -36,7 +35,7 @@ fn test_large_file() {
 
 #[test]
 fn test_extra_slashes() {
-    let fs = ISO9660::new(File::open("test.iso").unwrap()).unwrap();
+    let fs = ISO9660::new(File::open(TEST_IMAGE).unwrap()).unwrap();
 
     assert!(fs.open("///a/b/c/1").unwrap().is_some());
     assert!(fs.open("a/b/c/1///").unwrap().is_some());
@@ -46,7 +45,7 @@ fn test_extra_slashes() {
 
 #[test]
 fn test_large_dir() {
-    let fs = ISO9660::new(File::open("test.iso").unwrap()).unwrap();
+    let fs = ISO9660::new(File::open(TEST_IMAGE).unwrap()).unwrap();
 
     let dir = match fs.open("a/b/c").unwrap().unwrap() {
         DirectoryEntry::Directory(dir) => dir,
