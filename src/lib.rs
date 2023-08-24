@@ -78,7 +78,7 @@ impl<T: ISO9660Reader> ISO9660<T> {
                         table.root_directory_entry_identifier.clone(),
                     ));
                     primary = descriptor;
-                },
+                }
                 Some(VolumeDescriptor::Supplementary(table)) => {
                     if table.logical_block_size != 2048 {
                         // This is almost always the case, but technically
@@ -122,20 +122,19 @@ impl<T: ISO9660Reader> ISO9660<T> {
         // Try finding the path in the supplementary directory structure if it exists
         // If there's no supplementary structure or it doesn't have the file,
         // check the primary.
-        Ok(
-            self.sup_root
-                .as_ref()
-                .and_then(|sup_root| sup_root.resolve_path(path).transpose())
-                .or_else(|| self.root.resolve_path(path).transpose())
-                .transpose()?
-        )
+        Ok(self
+            .sup_root
+            .as_ref()
+            .and_then(|sup_root| sup_root.resolve_path(path).transpose())
+            .or_else(|| self.root.resolve_path(path).transpose())
+            .transpose()?)
     }
 
     /// Returns the root directory from the supplemental table if present. Otherwise returns the primary table.
     pub fn root(&self) -> &ISODirectory<T> {
         match self.sup_root.as_ref() {
             Some(sup_root) => sup_root,
-            None => &self.root
+            None => &self.root,
         }
     }
 
@@ -144,7 +143,7 @@ impl<T: ISO9660Reader> ISO9660<T> {
         match index {
             0 => Some(&self.root),
             1 => self.sup_root.as_ref(),
-            _ => unimplemented!()
+            _ => unimplemented!(),
         }
     }
 

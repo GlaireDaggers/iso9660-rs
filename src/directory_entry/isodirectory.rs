@@ -77,7 +77,8 @@ impl<T: ISO9660Reader> ISODirectory<T> {
             *buf_block_num = Some(block_num);
         }
 
-        let (header, identifier) = DirectoryEntryHeader::parse(&block[block_pos..], self.header.character_encoding)?;
+        let (header, identifier) =
+            DirectoryEntryHeader::parse(&block[block_pos..], self.header.character_encoding)?;
         block_pos += header.length as usize;
 
         let entry = DirectoryEntry::new(header, identifier, self.file.clone())?;
