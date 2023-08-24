@@ -2,7 +2,7 @@
 
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take};
-use nom::combinator::{map, map_res, value};
+use nom::combinator::{map, map_res, map_parser, rest, value};
 use nom::number::complete::*;
 use nom::sequence::tuple;
 use nom::IResult;
@@ -112,21 +112,38 @@ impl VolumeDescriptor {
     }
 }
 
-fn take_string_trim(count: usize) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
+fn decode_string(encoding: CharacterEncoding) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
     move |i: &[u8]| {
-        map(
-            map(map_res(take(count), str::from_utf8), str::trim_end),
-            str::to_string,
-        )(i)
+        match encoding {
+            CharacterEncoding::Ucs2Level1 |
+            CharacterEncoding::Ucs2Level2 |
+            CharacterEncoding::Ucs2Level3 => {
+                map(
+                    rest,
+                    |input| {
+                        let (cow, _encoding_used, had_errors) = encoding_rs::UTF_16BE.decode(input);
+                        assert_eq!(had_errors, false);
+                        cow.trim_end().to_string()
+                    }
+                )(i)
+            },
+            CharacterEncoding::Iso9660 => {
+                map(
+                    map(map_res(rest, str::from_utf8), str::trim_end),
+                    str::to_string,
+                )(i)
+            }
+        }
     }
 }
 
 fn boot_record(i: &[u8]) -> IResult<&[u8], VolumeDescriptor> {
-    let (i, (boot_system_identifier, boot_identifier, data)) = tuple((
-        take_string_trim(32usize),
-        take_string_trim(32usize),
+    let (i, (boot_system_identifier, boot_identifier, data)) : (&[u8],(String,_, _)) = tuple((
+        map_parser(take(32usize), decode_string(CharacterEncoding::Iso9660)),
+        map_parser(take(32usize), decode_string(CharacterEncoding::Iso9660)),
         take(1977usize),
     ))(i)?;
+
     Ok((
         i,
         VolumeDescriptor::BootRecord {
@@ -152,8 +169,8 @@ fn volume_descriptor(i: &[u8]) -> IResult<&[u8], Option<VolumeDescriptor>> {
 
 fn descriptor_table(i: &[u8]) -> IResult<&[u8], VolumeDescriptorTable> {
     let (i, _) = take(1usize)(i)?; // padding
-    let (i, system_identifier) = take_string_trim(32usize)(i)?;
-    let (i, volume_identifier) = take_string_trim(32usize)(i)?;
+    let (i, system_identifier) = take(32usize)(i)?;
+    let (i, volume_identifier) = take(32usize)(i)?;
     let (i, _) = take(8usize)(i)?; // padding
     let (i, volume_space_size) = both_endian32(i)?;
     let (i, character_encoding) = CharacterEncoding::parse(i)?;
@@ -169,13 +186,13 @@ fn descriptor_table(i: &[u8]) -> IResult<&[u8], VolumeDescriptorTable> {
 
     let (i, root_directory_entry) = directory_entry(i, character_encoding)?;
 
-    let (i, volume_set_identifier) = take_string_trim(128)(i)?;
-    let (i, publisher_identifier) = take_string_trim(128)(i)?;
-    let (i, data_preparer_identifier) = take_string_trim(128)(i)?;
-    let (i, application_identifier) = take_string_trim(128)(i)?;
-    let (i, copyright_file_identifier) = take_string_trim(38)(i)?;
-    let (i, abstract_file_identifier) = take_string_trim(36)(i)?;
-    let (i, bibliographic_file_identifier) = take_string_trim(37)(i)?;
+    let (i, volume_set_identifier) = take(128usize)(i)?;
+    let (i, publisher_identifier) = take(128usize)(i)?;
+    let (i, data_preparer_identifier) = take(128usize)(i)?;
+    let (i, application_identifier) = take(128usize)(i)?;
+    let (i, copyright_file_identifier) = take(38usize)(i)?;
+    let (i, abstract_file_identifier) = take(36usize)(i)?;
+    let (i, bibliographic_file_identifier) = take(37usize)(i)?;
 
     let (i, creation_time) = date_time_ascii(i)?;
     let (i, modification_time) = date_time_ascii(i)?;
@@ -183,6 +200,16 @@ fn descriptor_table(i: &[u8]) -> IResult<&[u8], VolumeDescriptorTable> {
     let (i, effective_time) = date_time_ascii(i)?;
 
     let (i, file_structure_version) = le_u8(i)?;
+
+    let (_, system_identifier) = decode_string(character_encoding)(system_identifier)?;
+    let (_, volume_identifier) = decode_string(character_encoding)(volume_identifier)?;
+    let (_, volume_set_identifier) = decode_string(character_encoding)(volume_set_identifier)?;
+    let (_, publisher_identifier) = decode_string(character_encoding)(publisher_identifier)?;
+    let (_, data_preparer_identifier) = decode_string(character_encoding)(data_preparer_identifier)?;
+    let (_, application_identifier) = decode_string(character_encoding)(application_identifier)?;
+    let (_, copyright_file_identifier) = decode_string(character_encoding)(copyright_file_identifier)?;
+    let (_, abstract_file_identifier) = decode_string(character_encoding)(abstract_file_identifier)?;
+    let (_, bibliographic_file_identifier) = decode_string(CharacterEncoding::Iso9660)(bibliographic_file_identifier)?;
 
     Ok((
         i,
