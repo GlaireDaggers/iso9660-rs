@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -13,30 +14,49 @@ use iso9660::{DirectoryEntry, ISODirectory, ISOFileReader, ISO9660};
 
 fn entry_to_filetype(entry: &DirectoryEntry<File>) -> fuser::FileType {
     match entry {
-        DirectoryEntry::File(_) => fuser::FileType::RegularFile,
         DirectoryEntry::Directory(_) => fuser::FileType::Directory,
+        DirectoryEntry::File(_) => fuser::FileType::RegularFile,
     }
 }
 
 fn get_fileattr(ino: u64, entry: &DirectoryEntry<File>) -> fuser::FileAttr {
     let blocks = (entry.header().extent_length + 2048 - 1) / 2048; // ceil(len / 2048
     let time = entry.header().time.into();
+
+    // If the goal is to allow a non-privileged user to view things, let's
+    // default to our own UID/GID.  A more useful implementation would
+    // allow the end user to override this and never use the Rockridge
+    // POSIX info so that they can inspect the whole filesystem.
+    let uid = unsafe { libc::geteuid() };
+    let gid = unsafe { libc::getegid() };
+
+    // Okay. File permissions are *octal*, not decimal.  Unlike some (many?) other languages Rust
+    // will assume a numeric literal is in base-10 even if it starts with a leading 0.  For Rust
+    // to assume an octal literal it must start with `0o`.
+    //
+    // Directories should have their execute bit set so that we can list their contents.
+    // Files shouldn't to be extra paranoid.
+    let perm = match entry {
+        DirectoryEntry::Directory(_) => 0o0555,
+        DirectoryEntry::File(_) => 0o0444,
+    };
+
     fuser::FileAttr {
         ino,
-        size: entry.header().extent_length as u64,
-        blocks: blocks as u64,
+        size: u64::from(entry.header().extent_length),
+        blocks: u64::from(blocks),
         atime: time,
         mtime: time,
         ctime: time,
         crtime: time,
         kind: entry_to_filetype(&entry),
-        perm: 0444,
+        perm,
         nlink: 1,
-        uid: 0,
-        gid: 0,
+        uid,
+        gid,
         rdev: 0,
         flags: 0,
-        blksize: 512,
+        blksize: 2048,
     }
 }
 
@@ -123,9 +143,12 @@ impl fuser::Filesystem for ISOFuse {
         _lock_owner: Option<u64>,
         reply: ReplyData,
     ) {
+        let offset = u64::try_from(offset).expect("SeekFrom::Start must be positive int");
+        let size = usize::try_from(size).expect("size didn't fit into usize?");
+
         let file = self.open_files.get_mut(&fh).unwrap();
-        file.seek(SeekFrom::Start(offset as u64)).unwrap();
-        let mut buf = Vec::with_capacity(size as usize);
+        file.seek(SeekFrom::Start(offset)).unwrap();
+        let mut buf = vec![0; size];
         let count = file.read(&mut buf).unwrap();
         reply.data(&buf[..count]);
     }
