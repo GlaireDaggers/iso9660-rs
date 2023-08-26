@@ -12,7 +12,7 @@ use std::{
 
 use clap::Parser;
 use fuser::{ReplyAttr, ReplyData, ReplyDirectory, ReplyEmpty, ReplyEntry, ReplyOpen, Request};
-use libc::{EISDIR, ENOTDIR};
+use libc::{EISDIR, ENOENT, ENOTDIR, EPROTO};
 
 use iso9660::{DirectoryEntry, ISODirectory, ISOFileReader, ISO9660};
 
@@ -114,8 +114,8 @@ impl fuser::Filesystem for ISOFuse {
 
                     reply.entry(&Duration::from_secs(0), &fileattr, 0);
                 }
-                Ok(None) => {}
-                Err(_) => {}
+                Ok(None) => reply.error(ENOENT),
+                Err(_) => reply.error(EPROTO),
             }
         } else {
             reply.error(ENOTDIR);
