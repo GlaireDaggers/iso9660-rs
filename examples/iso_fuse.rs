@@ -1,16 +1,27 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::ffi::OsStr;
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
+use std::{
+    collections::HashMap,
+    convert::TryFrom,
+    ffi::OsStr,
+    fs::File,
+    io::{Read, Seek, SeekFrom},
+    path::PathBuf,
+    time::Duration,
+};
 
+use clap::Parser;
 use fuser::{ReplyAttr, ReplyData, ReplyDirectory, ReplyEmpty, ReplyEntry, ReplyOpen, Request};
 use libc::{EISDIR, ENOTDIR};
-use std::time::Duration;
 
 use iso9660::{DirectoryEntry, ISODirectory, ISOFileReader, ISO9660};
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    iso_path: PathBuf,
+    mountpoint: PathBuf,
+}
 
 fn entry_to_filetype(entry: &DirectoryEntry<File>) -> fuser::FileType {
     match entry {
@@ -232,9 +243,13 @@ impl fuser::Filesystem for ISOFuse {
     }
 }
 
-fn main() {
-    let mut args = std::env::args().skip(1);
-    let path = args.next().unwrap();
-    let mount_path = args.next().unwrap();
-    fuser::mount2(ISOFuse::new(path), &mount_path, &[]).unwrap();
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+
+    // Ideally ISOFuse::new should take an AsRef<Path>
+    let iso_path = args.iso_path.to_string_lossy().to_string();
+
+    fuser::mount2(ISOFuse::new(iso_path), &args.mountpoint, &[])?;
+
+    Ok(())
 }
