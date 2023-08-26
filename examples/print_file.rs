@@ -2,34 +2,45 @@
 
 extern crate iso9660;
 
-use std::fs::File;
-use std::io::{self, Read, Write};
-use std::{env, process};
+use std::{
+    fs::File,
+    io::{self, Read, Write},
+    path::PathBuf,
+};
+
+use anyhow::{anyhow, bail};
+use clap::Parser;
 
 use iso9660::{DirectoryEntry, ISO9660};
 
-fn main() {
-    let args = env::args();
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    iso_path: PathBuf,
+    file_path: PathBuf,
+}
 
-    if args.len() != 3 {
-        eprintln!("Requires 2 arguments.");
-        process::exit(1);
-    }
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
 
-    let iso_path = env::args().nth(1).unwrap();
-    let file_path = env::args().nth(2).unwrap();
+    let file = File::open(args.iso_path)?;
+    let fs = ISO9660::new(file)?;
 
-    let file = File::open(iso_path).unwrap();
-    let fs = ISO9660::new(file).unwrap();
+    let file_path = args
+        .file_path
+        .to_str()
+        .ok_or_else(|| anyhow!("file_path could not be converted to a UTF-8 string"))?;
 
-    match fs.open(&file_path).unwrap() {
+    match fs.open(file_path).unwrap() {
         Some(DirectoryEntry::File(file)) => {
             let mut stdout = io::stdout();
             let mut text = Vec::new();
-            file.read().read_to_end(&mut text).unwrap();
-            stdout.write_all(&text).unwrap();
+            file.read().read_to_end(&mut text)?;
+            stdout.write_all(&text)?;
         }
-        Some(_) => panic!("{} is not a file.", file_path),
-        None => panic!("'{}' not found", file_path),
+        Some(_) => bail!("{file_path} is not a file."),
+        None => bail!("'{file_path}' not found"),
     }
+
+    Ok(())
 }
