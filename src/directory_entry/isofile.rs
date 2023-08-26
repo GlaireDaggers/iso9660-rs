@@ -97,7 +97,7 @@ impl<T: ISO9660Reader> Read for ISOFileReader<T> {
 
     fn read(&mut self, mut buf: &mut [u8]) -> io::Result<usize> {
         let mut seek = self.seek;
-        while !buf.is_empty() && seek < self.size {
+        while seek < self.size {
             let lba = self.start_lba as u64 + (seek as u64 / 2048);
             if self.buf_lba != Some(lba) {
                 self.file.read_at(&mut self.buf, lba)?;
@@ -106,11 +106,12 @@ impl<T: ISO9660Reader> Read for ISOFileReader<T> {
 
             let start = seek % 2048;
             let end = min(self.size - (seek / 2048) * 2048, 2048);
-            seek += buf.write(&self.buf[start..end]).unwrap();
+            seek += buf.write(&self.buf[start..end])?;
         }
 
         let bytes = seek - self.seek;
         self.seek = seek;
+
         Ok(bytes)
     }
 }
