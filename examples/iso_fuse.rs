@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 
 use fuser::{ReplyAttr, ReplyData, ReplyDirectory, ReplyEmpty, ReplyEntry, ReplyOpen, Request};
-use libc::{EISDIR, ENOTDIR};
+use libc::{EINVAL, EISDIR, ENOTDIR};
 use std::time::Duration;
 
 use iso9660::{DirectoryEntry, ISODirectory, ISOFileReader, ISO9660};
@@ -92,17 +92,27 @@ impl fuser::Filesystem for ISOFuse {
     }
 
     fn forget(&mut self, _req: &Request, ino: u64, _nlookup: u64) {
-        self.inodes.remove(&ino);
+        if self.inodes.remove(&ino).is_none() {
+            eprintln!("Attempting to forget non-existant inode: {ino:?}");
+        }
     }
 
     fn getattr(&mut self, _req: &Request, ino: u64, reply: ReplyAttr) {
-        let entry = self.inodes.get(&ino).unwrap();
+        let entry = match self.inodes.get(&ino) {
+            Some(entry) => entry,
+            None => return reply.error(EINVAL),
+        };
         let fileattr = get_fileattr(ino, entry);
+
         reply.attr(&Duration::from_secs(0), &fileattr);
     }
 
     fn open(&mut self, _req: &Request, ino: u64, _flags: i32, reply: ReplyOpen) {
-        let entry = self.inodes.get(&ino).unwrap();
+        let entry = match self.inodes.get(&ino) {
+            Some(entry) => entry,
+            None => return reply.error(EINVAL),
+        };
+
         if let DirectoryEntry::File(file) = entry {
             self.open_files.insert(self.file_number, file.read());
             reply.opened(self.file_number, 0);
@@ -140,12 +150,18 @@ impl fuser::Filesystem for ISOFuse {
         _flush: bool,
         reply: ReplyEmpty,
     ) {
-        self.open_files.remove(&fh);
-        reply.ok();
+        match self.open_files.remove(&fh) {
+            Some(_) => reply.ok(),
+            None => reply.error(EINVAL),
+        }
     }
 
     fn opendir(&mut self, _req: &Request, ino: u64, _flags: i32, reply: ReplyOpen) {
-        let entry = self.inodes.get(&ino).unwrap();
+        let entry = match self.inodes.get(&ino) {
+            Some(entry) => entry,
+            None => return reply.error(EINVAL),
+        };
+
         if let DirectoryEntry::Directory(directory) = entry {
             self.open_directories
                 .insert(self.directory_number, directory.clone());
@@ -204,8 +220,10 @@ impl fuser::Filesystem for ISOFuse {
     }
 
     fn releasedir(&mut self, _req: &Request, _ino: u64, fh: u64, _flags: i32, reply: ReplyEmpty) {
-        self.open_directories.remove(&fh);
-        reply.ok();
+        match self.open_directories.remove(&fh) {
+            Some(_) => reply.ok(),
+            None => reply.error(EINVAL),
+        }
     }
 }
 
