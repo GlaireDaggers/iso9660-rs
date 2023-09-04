@@ -1,7 +1,7 @@
 [package]
 name = "cdfs"
 description = "Rust implementation of ISO 9660 / ECMA-119"
-version = "0.2.0-beta2"
+version = "0.2.0"
 authors = ["Ian Douglas Scott <ian@iandouglasscott.com>", "Alex Zepeda <iso9660@inferiorhumanorgans.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
