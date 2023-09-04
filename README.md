@@ -1,5 +1,7 @@
 cdfs
 ====
+[![builds.sr.ht status](https://builds.sr.ht/~az1/iso9660-rs/commits/master.svg)](https://builds.sr.ht/~az1/iso9660-rs/commits/master?)
+
 ISO 9660 / ECMA-119 filesystem implementation written in Rust.  It's still very much a work-in-progress.
 
 Usage
