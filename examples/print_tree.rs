@@ -2,63 +2,102 @@
 
 extern crate iso9660;
 
-use std::fs::File;
-use std::{env, process};
+use std::{fs::File, path::PathBuf};
 
-use iso9660::{DirectoryEntry, ISO9660Reader, ISODirectory, ISO9660};
+use anyhow::{anyhow, bail};
+use clap::Parser;
+use time::format_description::{self, FormatItem};
 
-fn main() {
-    let args = env::args();
+use iso9660::{DirectoryEntry, ExtraAttributes, ISO9660Reader, ISODirectory, ISO9660};
 
-    if args.len() < 2 || args.len() > 3 {
-        eprintln!("Requires 1 or 2 arguments.");
-        process::exit(1);
-    }
+const INDENT: &str = "  ";
 
-    let mut args = env::args().skip(1);
-    let path = args.next().unwrap();
-    let dirpath = args.next();
-
-    let file = File::open(path).unwrap();
-    let fs = ISO9660::new(file).unwrap();
-
-    if let Some(dirpath) = dirpath {
-        match fs.open(&dirpath).unwrap() {
-            Some(DirectoryEntry::Directory(dir)) => {
-                print_tree(&dir, 0);
-            }
-            Some(DirectoryEntry::File(_)) => {
-                eprintln!("'{}' is not a directory", dirpath);
-                process::exit(1);
-            }
-            None => {
-                eprintln!("'{}' does not exist", dirpath);
-                process::exit(1);
-            }
-        }
-    } else {
-        print_tree(&fs.root, 0);
-    }
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    iso_path: PathBuf,
+    dir_path: Option<PathBuf>,
 }
 
-fn print_tree<T: ISO9660Reader>(dir: &ISODirectory<T>, level: u32) {
+fn main() -> anyhow::Result<()> {
+    let time_format =
+        format_description::parse("[month repr:short] [day] [year] [hour repr:24]:[minute]")?;
+
+    simple_logger::SimpleLogger::new()
+        .with_level(log::LevelFilter::Info)
+        .env()
+        .init()?;
+
+    let args = Args::parse();
+
+    let file = File::open(args.iso_path)?;
+    let fs = ISO9660::new(file)?;
+
+    match args.dir_path {
+        Some(dir_path) => {
+            let dir_path = dir_path
+                .to_str()
+                .ok_or_else(|| anyhow!("{dir_path:?} could not be converted to a UTF-8 string"))?;
+
+            match fs.open(dir_path)? {
+                Some(DirectoryEntry::Directory(dir)) => {
+                    print_tree(&dir, 0, &time_format);
+                }
+                Some(DirectoryEntry::File(_)) | Some(DirectoryEntry::Symlink(_)) => {
+                    bail!("'{dir_path}' is not a directory");
+                }
+                None => {
+                    bail!("'{dir_path}' does not exist");
+                }
+            }
+        }
+
+        None => print_tree(fs.root(), 0, &time_format),
+    }
+
+    Ok(())
+}
+
+fn print_tree<T: ISO9660Reader>(dir: &ISODirectory<T>, level: usize, time_format: &[FormatItem]) {
     for entry in dir.contents() {
         match entry.unwrap() {
             DirectoryEntry::Directory(dir) => {
                 if dir.identifier == "." || dir.identifier == ".." {
                     continue;
                 }
-                for _i in 0..level {
-                    print!("  ");
+
+                if let Some(mode) = dir.mode() {
+                    print!("{mode} ");
                 }
-                println!("- {}/", dir.identifier);
-                print_tree(&dir, level + 1);
+                print!(" {} ", dir.modify_time().format(&time_format).unwrap());
+
+                println!("{}{}/", INDENT.repeat(level), dir.identifier);
+                print_tree(&dir, level + 1, time_format);
             }
             DirectoryEntry::File(file) => {
-                for _i in 0..level {
-                    print!("  ");
+                if let Some(mode) = file.mode() {
+                    print!("{mode} ");
                 }
-                println!("- {}", file.identifier);
+                print!(" {} ", file.modify_time().format(&time_format).unwrap());
+
+                println!("{}{}", INDENT.repeat(level), file.identifier);
+            }
+            DirectoryEntry::Symlink(link) => {
+                if let Some(mode) = link.mode() {
+                    print!("{mode} ");
+                }
+
+                print!(" {} ", dir.modify_time().format(&time_format).unwrap());
+
+                let target = match link.target() {
+                    Some(target) if target == "\u{0}" => "..",
+                    Some(target) if target == "\u{1}" => ".",
+                    Some(target) if target.is_empty() => "‽‽‽",
+                    Some(target) => target,
+                    None => "‽‽‽",
+                };
+
+                println!("{}{} → {target}", INDENT.repeat(level), link.identifier);
             }
         }
     }

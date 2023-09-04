@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
-use nom::bytes::complete::take;
-use nom::combinator::map_res;
+use nom::branch::alt;
+use nom::bytes::complete::{tag, take};
+use nom::combinator::{map_res, value};
+use nom::multi::count;
 use nom::number::complete::le_u8;
 use nom::sequence::tuple;
-use nom::IResult;
 use std::convert::TryFrom;
 use std::str;
 use time::{Date, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
 
-pub fn date_time(i: &[u8]) -> IResult<&[u8], OffsetDateTime> {
+use crate::error::NomRes;
+
+pub fn date_time(i: &[u8]) -> NomRes<&[u8], OffsetDateTime> {
     let (i, (year, month, day, hour, minute, second, gmt_offset)) =
         tuple((le_u8, le_u8, le_u8, le_u8, le_u8, le_u8, le_u8))(i)?;
 
@@ -33,11 +36,16 @@ pub fn date_time(i: &[u8]) -> IResult<&[u8], OffsetDateTime> {
     Ok((i, PrimitiveDateTime::new(date, time).assume_offset(offset)))
 }
 
-fn ascii_i32(n: usize) -> impl Fn(&[u8]) -> IResult<&[u8], i32> {
-    move |i: &[u8]| map_res(map_res(take(n), str::from_utf8), str::parse::<i32>)(i)
+fn ascii_i32(n: usize) -> impl Fn(&[u8]) -> NomRes<&[u8], i32> {
+    move |i: &[u8]| {
+        alt((
+            map_res(map_res(take(n), str::from_utf8), str::parse::<i32>),
+            value(0, count(tag(b"\0"), n)),
+        ))(i)
+    }
 }
 
-pub fn date_time_ascii(i: &[u8]) -> IResult<&[u8], OffsetDateTime> {
+pub fn date_time_ascii(i: &[u8]) -> NomRes<&[u8], OffsetDateTime> {
     let (i, (tm_year, tm_mon, tm_mday, tm_hour, tm_min, tm_sec, centisecond, gmt_offset)) =
         tuple((
             ascii_i32(4),

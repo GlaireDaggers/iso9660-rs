@@ -1,46 +1,23 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
-use std::cell::RefCell;
-#[cfg(feature = "nightly")]
-use std::fs::File;
-use std::io::{Read, Result, Seek, SeekFrom};
-use std::rc::Rc;
+use std::{
+    cell::RefCell,
+    io::{Read, Result, Seek, SeekFrom},
+    rc::Rc,
+};
 
+use crate::BLOCK_SIZE;
+
+/// A trait for objects which can be read by logical block addresses.
 pub trait ISO9660Reader {
     /// Read the block(s) at a given LBA (logical block address)
     fn read_at(&mut self, buf: &mut [u8], lba: u64) -> Result<usize>;
 }
 
-#[cfg(not(feature = "nightly"))]
 impl<T: Read + Seek> ISO9660Reader for T {
     fn read_at(&mut self, buf: &mut [u8], lba: u64) -> Result<usize> {
-        self.seek(SeekFrom::Start(lba * 2048))?;
+        self.seek(SeekFrom::Start(lba * u64::from(BLOCK_SIZE)))?;
         self.read(buf)
-    }
-}
-
-#[cfg(feature = "nightly")]
-impl<T: Read + Seek> ISO9660Reader for T {
-    default fn read_at(&mut self, buf: &mut [u8], lba: u64) -> Result<usize> {
-        self.seek(SeekFrom::Start(lba * 2048))?;
-        self.read(buf)?
-    }
-}
-
-#[cfg(feature = "nightly")]
-impl ISO9660Reader for File {
-    fn read_at(&mut self, buf: &mut [u8], lba: u64) -> Result<usize> {
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::FileExt;
-            FileExt::read_at(self, buf, lba * 2048)?
-        }
-        #[cfg(not(unix))]
-        {
-            use std::io::{Read, Seek, SeekFrom};
-            self.seek(SeekFrom::Start(lba * 2048))?;
-            self.read(buf)?
-        }
     }
 }
 
