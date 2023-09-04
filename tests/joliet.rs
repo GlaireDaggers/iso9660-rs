@@ -2,7 +2,7 @@
 
 use std::fs::File;
 
-use iso9660::ISO9660;
+use cdfs::ISO9660;
 
 mod common;
 use common::collect_filenames;

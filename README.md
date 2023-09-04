@@ -1,15 +1,13 @@
-iso9660-rs
-==========
-ISO 9660 / ECMA-119 filesystem implementation written in Rust.  It's still very much a work-in-progress. This branch contains initial support for Microsoft's Joliet long filenames and some Rock Ridge features.
+cdfs
+====
+ISO 9660 / ECMA-119 filesystem implementation written in Rust.  It's still very much a work-in-progress.
 
 Usage
 -----
-
 See the examples and the documentation for more information.
 
 Extensions
 ----------
-
 | System Use Sharing Protocol  |     |
 | ---------------------------- | --- |
 | `CE` – continuation area     | yes |

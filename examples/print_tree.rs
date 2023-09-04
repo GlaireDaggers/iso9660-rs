@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
-extern crate iso9660;
-
 use std::{fs::File, path::PathBuf};
 
 use anyhow::{anyhow, bail};
 use clap::Parser;
 use time::format_description::{self, FormatItem};
 
-use iso9660::{DirectoryEntry, ExtraAttributes, ISO9660Reader, ISODirectory, ISO9660};
+use cdfs::{DirectoryEntry, ExtraAttributes, ISO9660Reader, ISODirectory, ISO9660};
 
 const INDENT: &str = "  ";
 

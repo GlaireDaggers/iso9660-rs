@@ -21,7 +21,7 @@ use fuser::{
 };
 use libc::{EINVAL, EIO, EISDIR, ENFILE, ENOENT, ENOTDIR, ENOTSUP};
 
-use iso9660::{
+use cdfs::{
     BlockBuffer, BlockBufferCtor, DirectoryEntry, ExtraAttributes, ISODirectory, ISOFileReader,
     BLOCK_SIZE, ISO9660,
 };

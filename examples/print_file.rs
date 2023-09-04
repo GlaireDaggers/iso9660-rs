@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
-extern crate iso9660;
-
 use std::{
     fs::File,
     io::{self, Read, Write},
@@ -11,7 +9,7 @@ use std::{
 use anyhow::{anyhow, bail};
 use clap::Parser;
 
-use iso9660::{DirectoryEntry, ISO9660};
+use cdfs::{DirectoryEntry, ISO9660};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]

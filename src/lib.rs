@@ -1,37 +1,38 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
-//! # iso9660
+//! # cdfs
 //!
-//! `iso9660` is a portable, userland implementation of the ISO 9660 / ECMA-119 filesystem typically found on CDs and DVDs.
+//! `cdfs` is a portable, userland implementation of the ISO 9660 / ECMA-119 filesystem typically found on CDs and DVDs.
 //!
 //! # Usage
 //!
 //! To open an ISO image:
 //! ```rust
 //! # use std::fs::File;
-//! # use iso9660::{DirectoryEntry, ISO9660};
+//! use cdfs::{DirectoryEntry, ISO9660};
+//!
 //! let file = File::open("images/test.iso")?;
 //! let iso = ISO9660::new(file)?;
-//! # Ok::<(), iso9660::ISOError>(())
+//! # Ok::<(), cdfs::ISOError>(())
 //! ```
 //!
 //! To read a file:
 //! ```rust
 //! # use std::{fs::File, io::Read};
-//! # use iso9660::{DirectoryEntry, ISO9660};
+//! # use cdfs::{DirectoryEntry, ISO9660};
 //! # let file = File::open("images/test.iso")?;
 //! # let iso = ISO9660::new(file)?;
 //! let mut contents = Vec::new();
 //! if let Some(DirectoryEntry::File(file)) = iso.open("README.md")? {
 //!   file.read().read_to_end(&mut contents)?;
 //! }
-//! # Ok::<(), iso9660::ISOError>(())
+//! # Ok::<(), cdfs::ISOError>(())
 //! ```
 //!
 //! To iterate over items in a directory:
 //! ```rust
 //! # use std::fs::File;
-//! # use iso9660::{DirectoryEntry, ISO9660};
+//! # use cdfs::{DirectoryEntry, ISO9660};
 //! # let file = File::open("images/test.iso")?;
 //! # let iso = ISO9660::new(file)?;
 //! if let Some(DirectoryEntry::Directory(dir)) = iso.open("/tmp")? {
@@ -39,19 +40,19 @@
 //!     println!("{}", entry?.identifier());
 //!   }
 //! }
-//! # Ok::<(), iso9660::ISOError>(())
+//! # Ok::<(), cdfs::ISOError>(())
 //! ```
 //!
 //! To get information about a file:
 //!
 //! ```rust
 //! # use std::fs::File;
-//! # use iso9660::{ISO9660, ExtraAttributes};
+//! # use cdfs::{ISO9660, ExtraAttributes};
 //! let file = File::open("images/test.iso")?;
 //! let iso = ISO9660::new(file)?;
 //! let obj = iso.open("GPL_3_0.TXT")?.expect("GPL_3_0.TXT doesn't exist");
 //! println!("Last modified at: {:?}", obj.modify_time());
-//! # Ok::<(), iso9660::ISOError>(())
+//! # Ok::<(), cdfs::ISOError>(())
 //! ```
 //!
 //! # See Also
@@ -133,10 +134,10 @@ impl<T: ISO9660Reader> ISO9660<T> {
     ///
     /// ```rust
     /// # use std::fs::File;
-    /// # use iso9660::ISO9660;
+    /// # use cdfs::ISO9660;
     /// let file = File::open("images/test.iso")?;
     /// let iso = ISO9660::new(file)?;
-    /// # Ok::<(), iso9660::ISOError>(())
+    /// # Ok::<(), cdfs::ISOError>(())
     /// ```
     pub fn new(mut reader: T) -> Result<ISO9660<T>> {
         let blksize = usize::from(BLOCK_SIZE);
@@ -231,11 +232,11 @@ impl<T: ISO9660Reader> ISO9660<T> {
     ///
     /// ```rust
     /// # use std::fs::File;
-    /// # use iso9660::ISO9660;
+    /// # use cdfs::ISO9660;
     /// # let file = File::open("images/test.iso")?;
     /// # let iso = ISO9660::new(file)?;
     /// let entry = iso.open("/README.TXT")?;
-    /// # Ok::<(), iso9660::ISOError>(())
+    /// # Ok::<(), cdfs::ISOError>(())
     /// ```
     pub fn open(&self, path: &str) -> Result<Option<DirectoryEntry<T>>> {
         self.root().find_recursive(path)

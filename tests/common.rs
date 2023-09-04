@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (MIT OR Apache-2.0)
 
-use iso9660::{ISO9660Reader, ISODirectory};
+use cdfs::{ISO9660Reader, ISODirectory};
 
 pub fn collect_filenames<T: ISO9660Reader>(directory: &ISODirectory<T>) -> Vec<String> {
     directory
