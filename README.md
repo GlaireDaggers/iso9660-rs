@@ -1,12 +1,13 @@
 cdfs
 ====
 [![builds.sr.ht status](https://builds.sr.ht/~az1/iso9660-rs/commits/master.svg)](https://builds.sr.ht/~az1/iso9660-rs/commits/master?)
+[![docs.rs status](https://docs.rs/cdfs/badge.svg)](https://docs.rs/cdfs/)
 
 ISO 9660 / ECMA-119 filesystem implementation written in Rust.  It's still very much a work-in-progress.
 
 Usage
 -----
-See the examples and the documentation for more information.
+See the examples directory and the [documentation](https://docs.rs/cdfs/) for more information on how to use `cdfs` in your project.
 
 Extensions
 ----------
