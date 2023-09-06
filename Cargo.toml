@@ -6,6 +6,7 @@ authors = ["Ian Douglas Scott <ian@iandouglasscott.com>", "Alex Zepeda <iso9660@
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://git.sr.ht/~az1/iso9660-rs"
+homepage = "https://sr.ht/~az1/cdfs/"
 
 [dependencies]
 bitflags = "2.0"
