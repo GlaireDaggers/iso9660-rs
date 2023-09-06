@@ -3,14 +3,28 @@ cdfs
 [![builds.sr.ht status](https://builds.sr.ht/~az1/iso9660-rs/commits/master.svg)](https://builds.sr.ht/~az1/iso9660-rs/commits/master?)
 [![docs.rs status](https://docs.rs/cdfs/badge.svg)](https://docs.rs/cdfs/)
 
-ISO 9660 / ECMA-119 filesystem implementation written in Rust.  It's still very much a work-in-progress.
+ISO 9660 / ECMA-119 filesystem implementation written in Rust.  It's still very much a work-in-progress.  The project overview lives at Sourcehut:
+
+https://sr.ht/~az1/cdfs/
 
 Usage
 -----
-See the examples directory and the [documentation](https://docs.rs/cdfs/) for more information on how to use `cdfs` in your project.
+See the examples directory and the [documentation](https://docs.rs/cdfs/) for more information on how to use the `cdfs` library in your project.
 
-Extensions
-----------
+If you're just interested in using `cdfs` to mount an ISO, there's a [FUSE](https://en.wikipedia.org/wiki/Filesystem_in_Userspace) implementation in the examples directory.
+
+```
+$ cargo run --example=iso_fuse images/rockridge.iso mountpoint/
+    Finished dev [unoptimized + debuginfo] target(s) in 0.15s
+     Running `target/debug/examples/iso_fuse`
+2023-09-06T00:00:00.203Z INFO  [iso_fuse] NOTE: The filesystem must be manually unmounted after exit
+2023-09-06T00:00:00.206Z INFO  [iso_fuse] Found POSIX.1 extensions with usable inodes.
+2023-09-06T00:00:00.206Z INFO  [fuser::session] Mounting mountpoint/
+…
+```
+
+Supported ISO 9660 Extensions
+-----------------------------
 | System Use Sharing Protocol  |     |
 | ---------------------------- | --- |
 | `CE` – continuation area     | yes |
@@ -45,5 +59,4 @@ References
 
 Licensing
 ---------
-
 This project is available under the Apache 2.0 or MIT license at your choosing.
