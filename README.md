@@ -14,11 +14,11 @@ See the examples directory and the [documentation](https://docs.rs/cdfs/) for mo
 If you're just interested in using `cdfs` to mount an ISO, there's a [FUSE](https://en.wikipedia.org/wiki/Filesystem_in_Userspace) implementation in the examples directory.
 
 ```
-$ cargo run --example=iso_fuse images/rockridge.iso mountpoint/
+$ cargo run -- images/rockridge.iso mountpoint/
     Finished dev [unoptimized + debuginfo] target(s) in 0.15s
-     Running `target/debug/examples/iso_fuse`
-2023-09-06T00:00:00.203Z INFO  [iso_fuse] NOTE: The filesystem must be manually unmounted after exit
-2023-09-06T00:00:00.206Z INFO  [iso_fuse] Found POSIX.1 extensions with usable inodes.
+     Running `target/debug/cdfs_fuse`
+2023-09-06T00:00:00.203Z INFO  [cdfs_fuse] NOTE: The filesystem must be manually unmounted after exit
+2023-09-06T00:00:00.206Z INFO  [cdfs_fuse] Found POSIX.1 extensions with usable inodes.
 2023-09-06T00:00:00.206Z INFO  [fuser::session] Mounting mountpoint/
 …
 ```
