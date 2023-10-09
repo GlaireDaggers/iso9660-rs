@@ -11,7 +11,24 @@ Usage
 -----
 See the examples directory and the [documentation](https://docs.rs/cdfs/) for more information on how to use the `cdfs` library in your project.
 
-If you're just interested in using `cdfs` to mount an ISO, there's a [FUSE](https://en.wikipedia.org/wiki/Filesystem_in_Userspace) implementation in the examples directory.
+If you're just interested in using `cdfs` to mount an ISO, there's a [FUSE](https://en.wikipedia.org/wiki/Filesystem_in_Userspace) implementation included.
+
+To install locally:
+
+```
+$ cargo install cdfs
+…
+   Compiling cdfs v0.2.2
+    Finished release [optimized] target(s) in 21.97s
+  Installing /home/user/.cargo/bin/cdfs_fuse
+   Installed package `cdfs v0.2.2` (executable `cdfs_fuse`)
+$ cdfs_fuse images/rockridge.iso mountpoint/
+2023-09-06T00:00:00.203Z INFO  [cdfs_fuse] NOTE: The filesystem must be manually unmounted after exit
+2023-09-06T00:00:00.206Z INFO  [cdfs_fuse] Found POSIX.1 extensions with usable inodes.
+2023-09-06T00:00:00.206Z INFO  [fuser::session] Mounting mountpoint/
+```
+
+Or run `cdfs` directly from the repository like so:
 
 ```
 $ cargo run -- images/rockridge.iso mountpoint/
