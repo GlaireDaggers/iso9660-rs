@@ -35,15 +35,26 @@ dependencies = [
  "cfg-if",
  "clap",
  "encoding_rs",
- "fuser",
  "itertools",
- "libc",
  "log",
  "md5",
  "nom",
  "simple_logger",
  "thiserror",
  "time",
+]
+
+[[package]]
+name = "cdfs-fuse"
+version = "0.2.4-pre"
+dependencies = [
+ "anyhow",
+ "cdfs",
+ "clap",
+ "fuser",
+ "libc",
+ "log",
+ "simple_logger",
 ]
 
 [[package]]

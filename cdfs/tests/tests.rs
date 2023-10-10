@@ -7,7 +7,7 @@ use cdfs::{DirectoryEntry, ISO9660};
 mod common;
 use common::collect_filenames;
 
-const TEST_IMAGE: &'static str = "images/test.iso";
+const TEST_IMAGE: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/../images/test.iso");
 
 #[test]
 fn test_dir() {

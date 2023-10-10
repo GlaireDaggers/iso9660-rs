@@ -1,0 +1,33 @@
+[package]
+name = "cdfs"
+description = "Rust implementation of ISO 9660 / ECMA-119"
+version = "0.2.4-pre"
+authors = [ "Ian Douglas Scott <ian@iandouglasscott.com>", "Alex Zepeda <iso9660@inferiorhumanorgans.com>" ]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://git.sr.ht/~az1/iso9660-rs"
+homepage = "https://sr.ht/~az1/cdfs/"
+keywords = [ "iso9660", "mount" ]
+categories = [ "filesystem" ]
+
+[dependencies]
+bitflags = "2.0"
+cfg-if = "1"
+clap = { version = "4", default-features = false, features = [ "std", "help", "usage", "error-context", "suggestions", "derive" ] }
+encoding_rs = "0.8.32"
+itertools = "0.11.0"
+log = "0.4"
+nom = "7.1"
+thiserror = "1"
+time = { version = "0.3", features = [ "formatting" ] }
+
+[dev-dependencies]
+anyhow = "1"
+md5 = "0.7"
+simple_logger = { version = "4.2.0", default-features = false, features = [ "timestamps" ] }
+
+[features]
+default = [ "assertions", "verbose-error" ]
+nightly = []
+assertions = []
+verbose-error = []

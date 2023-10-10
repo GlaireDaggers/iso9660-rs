@@ -7,7 +7,7 @@ use cdfs::ISO9660;
 mod common;
 use common::collect_filenames;
 
-const JOLIET_IMAGE: &'static str = "images/joliet.iso";
+const JOLIET_IMAGE: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/../images/joliet.iso");
 
 #[test]
 fn joliet_long_filenames_exist() {

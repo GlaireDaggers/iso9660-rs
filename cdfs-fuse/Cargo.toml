@@ -1,0 +1,20 @@
+[package]
+name = "cdfs-fuse"
+description = "FUSE implementation of ISO 9660 / ECMA-119"
+version = "0.2.4-pre"
+authors = [ "Ian Douglas Scott <ian@iandouglasscott.com>", "Alex Zepeda <iso9660@inferiorhumanorgans.com>" ]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://git.sr.ht/~az1/iso9660-rs"
+homepage = "https://sr.ht/~az1/cdfs/"
+keywords = [ "iso9660", "mount", "fuse" ]
+categories = [ "filesystem" ]
+
+[dependencies]
+anyhow = "1"
+cdfs = { path = "../cdfs" }
+clap = { version = "4", default-features = false, features = [ "std", "help", "usage", "error-context", "suggestions", "derive" ] }
+fuser = "0.13"
+libc = "0.2"
+log = "0.4"
+simple_logger = { version = "4.2.0", default-features = false, features = [ "timestamps" ] }

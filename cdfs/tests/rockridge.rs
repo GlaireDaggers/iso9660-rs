@@ -4,14 +4,14 @@ use std::fs::File;
 
 use cdfs::ISO9660;
 
-const JOLIET_IMAGE: &'static str = "images/rockridge.iso";
+const ROCKRIDGE_IMAGE: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/../images/rockridge.iso");
 
 mod common;
 use common::collect_filenames;
 
 #[test]
 fn rockridge_default_vd() {
-    let fs = ISO9660::new(File::open(JOLIET_IMAGE).expect("couldn't open file"))
+    let fs = ISO9660::new(File::open(ROCKRIDGE_IMAGE).expect("couldn't open file"))
         .expect("file is not an ISO image");
 
     let contents = collect_filenames(fs.root());
@@ -34,7 +34,7 @@ fn rockridge_default_vd() {
 
 #[test]
 fn rockridge_primary_vd() {
-    let fs = ISO9660::new(File::open(JOLIET_IMAGE).expect("couldn't open file"))
+    let fs = ISO9660::new(File::open(ROCKRIDGE_IMAGE).expect("couldn't open file"))
         .expect("file is not an ISO image");
 
     let contents = collect_filenames(fs.root_at(0).unwrap());
