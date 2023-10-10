@@ -7,28 +7,30 @@ ISO 9660 / ECMA-119 filesystem implementation written in Rust.  It's still very 
 
 https://sr.ht/~az1/cdfs/
 
-Usage
------
+Usage (cdfs)
+---------------
 See the examples directory and the [documentation](https://docs.rs/cdfs/) for more information on how to use the `cdfs` library in your project.
 
-If you're just interested in using `cdfs` to mount an ISO, there's a [FUSE](https://en.wikipedia.org/wiki/Filesystem_in_Userspace) implementation included.
+Usage (cdfs-fuse)
+---------------
+If you're just interested in using `cdfs` to mount an ISO, there's a [FUSE](https://en.wikipedia.org/wiki/Filesystem_in_Userspace) implementation in the `cdfs-fuse` crate.
 
 To install locally:
 
 ```
-$ cargo install cdfs
+$ cargo install cdfs-fuse
 …
-   Compiling cdfs v0.2.2
+   Compiling cdfs-fuse v0.2.4
     Finished release [optimized] target(s) in 21.97s
   Installing /home/user/.cargo/bin/cdfs_fuse
-   Installed package `cdfs v0.2.2` (executable `cdfs_fuse`)
+   Installed package `cdfs v0.2.4` (executable `cdfs_fuse`)
 $ cdfs_fuse images/rockridge.iso mountpoint/
 2023-09-06T00:00:00.203Z INFO  [cdfs_fuse] NOTE: The filesystem must be manually unmounted after exit
 2023-09-06T00:00:00.206Z INFO  [cdfs_fuse] Found POSIX.1 extensions with usable inodes.
 2023-09-06T00:00:00.206Z INFO  [fuser::session] Mounting mountpoint/
 ```
 
-Or run `cdfs` directly from the repository like so:
+Or run `cdfs-fuse` directly from the workspace root like so:
 
 ```
 $ cargo run -- images/rockridge.iso mountpoint/
