@@ -8,6 +8,7 @@
 //!
 //! To open an ISO image:
 //! ```rust
+//! # std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."));
 //! # use std::fs::File;
 //! use cdfs::{DirectoryEntry, ISO9660};
 //!
@@ -18,6 +19,7 @@
 //!
 //! To read a file:
 //! ```rust
+//! # std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."));
 //! # use std::{fs::File, io::Read};
 //! # use cdfs::{DirectoryEntry, ISO9660};
 //! # let file = File::open("images/test.iso")?;
@@ -31,6 +33,7 @@
 //!
 //! To iterate over items in a directory:
 //! ```rust
+//! # std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."));
 //! # use std::fs::File;
 //! # use cdfs::{DirectoryEntry, ISO9660};
 //! # let file = File::open("images/test.iso")?;
@@ -46,6 +49,7 @@
 //! To get information about a file:
 //!
 //! ```rust
+//! # std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."));
 //! # use std::fs::File;
 //! # use cdfs::{ISO9660, ExtraAttributes};
 //! let file = File::open("images/test.iso")?;
@@ -133,6 +137,7 @@ impl<T: ISO9660Reader> ISO9660<T> {
     /// # Example
     ///
     /// ```rust
+    /// # std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."));
     /// # use std::fs::File;
     /// # use cdfs::ISO9660;
     /// let file = File::open("images/test.iso")?;
@@ -231,6 +236,7 @@ impl<T: ISO9660Reader> ISO9660<T> {
     /// # Example
     ///
     /// ```rust
+    /// # std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."));
     /// # use std::fs::File;
     /// # use cdfs::ISO9660;
     /// # let file = File::open("images/test.iso")?;
