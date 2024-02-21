@@ -457,6 +457,7 @@ fn susp_extension(input: &[u8]) -> NomRes<&[u8], SuspExtension> {
     let extension = match (id.as_ref(), version) {
         ("RRIP_1991A", 1) => SuspExtension::RockRidge1_09,
         ("IEEE_P1282", 1) => SuspExtension::RockRidge1_12,
+        ("IEEE_1282", 1) => SuspExtension::RockRidge1_12,
         _ => unimplemented!(
             "Unknown extension {id:?}, description={description:?}, source={source:?}"
         ),
